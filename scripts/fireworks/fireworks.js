@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { fireworksSound } from '../sounds/fireworks.js';
+import { fireworks } from './state.js';
 
 /* =========================
   CREATE FIREWORK
@@ -36,7 +37,7 @@ function get2026Points() {
   return points;
 }
 
-function launchFirework(scene, camera, offsetMultiplier = 0) {
+export function launchFirework(scene, camera, offsetMultiplier = 0) {
   const points = get2026Points();
   const particleCount = points.length;
   
@@ -97,32 +98,56 @@ function launchFirework(scene, camera, offsetMultiplier = 0) {
   });
 
   const firework = new THREE.Points(geometry, material);
+
+  // Сохраняем данные для анимации в userData
+  firework.userData = {
+    velocities: velocities,
+    opacity: 1.0,
+    isDead: false
+  };
+
   scene.add(firework);
-
-  // Анимация (остается прежней)
-  function animate() {
-    const pos = geometry.attributes.position.array;
-    for (let i = 0; i < pos.length; i++) {
-      pos[i] += velocities[i];
-      // Добавим небольшую гравитацию, чтобы искры падали
-      if (i % 3 === 1) velocities[i] -= 0.001; 
-      velocities[i] *= 0.98;
-    }
-    geometry.attributes.position.needsUpdate = true;
-    material.opacity -= 0.004;
-
-    if (material.opacity > 0) {
-      requestAnimationFrame(animate);
-    } else {
-      scene.remove(firework);
-      geometry.dispose();
-      material.dispose();
-    }
-  }
-  animate();
+  fireworks.push(firework);
 }
 
-export function launchFireworks(scene, camera) {
+export function updateFireworks(scene, delta) {
+  const timeScale = delta * 60;
+
+  for (let i = fireworks.length - 1; i >= 0; i--) {
+    const fw = fireworks[i];
+    const pos = fw.geometry.attributes.position.array;
+    const vels = fw.userData.velocities;
+
+    for (let j = 0; j < pos.length; j++) {
+      // Движение
+      pos[j] += vels[j] * timeScale;
+
+      // Гравитация для Y компонентов
+      if (j % 3 === 1) {
+        vels[j] -= 0.001 * timeScale;
+      }
+
+      // Сопротивление воздуха
+      vels[j] *= Math.pow(0.98, timeScale);
+    }
+
+    fw.geometry.attributes.position.needsUpdate = true;
+
+    // Затухание
+    fw.userData.opacity -= 0.004 * timeScale;
+    fw.material.opacity = fw.userData.opacity;
+
+    // Удаление
+    if (fw.userData.opacity <= 0) {
+      scene.remove(fw);
+      fw.geometry.dispose();
+      fw.material.dispose();
+      fireworks.splice(i, 1);
+    }
+  }
+}
+
+export function launchFireworksWithAudio(scene, camera) {
   // --- ЗВУК ---
     if (fireworksSound.isPlaying) fireworksSound.stop(); // Сбрасываем, если уже играет
     fireworksSound.play(); 

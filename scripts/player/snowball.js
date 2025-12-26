@@ -23,7 +23,7 @@ function throwSnowball(player, camera, scene) {
   const direction = new THREE.Vector3();
   camera.getWorldDirection(direction);
 
-  snowball.position.copy(camera.position).add(direction.clone().multiplyScalar(-1));
+  snowball.position.copy(camera.position).add(direction.clone().multiplyScalar(0.5));
 
   // скорость
   const speed = 1.2;
@@ -37,15 +37,21 @@ function throwSnowball(player, camera, scene) {
   snowballSound.cloneNode().play();
 }
 
-export function updateSnowballs(scene) {
+export function updateSnowballs(scene, delta) {
+  // Константа для нормализации скорости. 
+  // Если раньше код писался под 60 FPS, то delta будет ~0.016.
+  // Мы будем умножать перемещение на delta * 60, чтобы сохранить привычные значения.
+  const timeScale = delta * 60; 
+
   for (let i = snowballs.length - 1; i >= 0; i--) {
     const ball = snowballs[i];
-
-    // 1. Сначала проверяем столкновение ОТ старой позиции К новой (которую мы сейчас вычислим)
     const velocity = ball.userData.velocity;
-    const nextPosition = ball.position.clone().add(velocity);
+
+    // 1. Вычисляем смещение за этот кадр
+    // .clone().multiplyScalar(timeScale) позволяет перемещению зависеть от времени
+    const frameVelocity = velocity.clone().multiplyScalar(timeScale);
+    const nextPosition = ball.position.clone().add(frameVelocity);
     
-    // Передаем в функцию текущую позицию и ту, где он окажется через мгновение
     const hitObject = checkCollision(ball, nextPosition, scene);
 
     if (hitObject?.userData?.isTarget) {
@@ -54,22 +60,33 @@ export function updateSnowballs(scene) {
         updateTargetsUI(playerState.targetsShot);
       }
       hitObject.userData.isUp = false;
-      hitObject.userData.respawnTimer = 120;
+      // Таймер респауна тоже должен зависеть от времени (120 кадров -> 2 секунды)
+      hitObject.userData.respawnTimer = 2 / delta; 
     }
 
     if (hitObject || ball.position.y < 0) {
       hitSound.cloneNode().play();
       createSnowImpact(ball.position.clone(), scene);
       scene.remove(ball);
+      ball.geometry.dispose();
+      ball.material.dispose();
       snowballs.splice(i, 1);
       continue;
     }
 
-    // 2. Только если столкновения нет — реально перемещаем объект
+    // 2. Реальное перемещение
     ball.position.copy(nextPosition);
-    ball.userData.velocity.y -= 0.01; // Гравитация
 
-    ball.userData.life--;
+    // 3. Гравитация (тоже умножаем на timeScale)
+    // 0.01 была подобрана под один кадр, теперь она привязана ко времени
+    velocity.y -= 0.01 * timeScale; 
+
+    // 4. Время жизни (Life)
+    // Если раньше life было, например, 100 кадров, 
+    // то теперь вычитаем время, чтобы снежок жил условно 2-3 секунды.
+    ball.userData.life -= timeScale; 
+    ball.castShadow = false;
+    
     if (ball.userData.life <= 0) {
       scene.remove(ball);
       snowballs.splice(i, 1);
@@ -134,19 +151,34 @@ function createSnowImpact(position, scene) {
   snowImpacts.push(group);
 }
 
-export function updateSnowImpacts(scene) {
+export function updateSnowImpacts(scene, delta) {
+  const timeScale = delta * 60;
+
   for (let i = snowImpacts.length - 1; i >= 0; i--) {
     const impact = snowImpacts[i];
 
-    impact.userData.life--;
+    impact.userData.life -= timeScale;
 
     impact.children.forEach(p => {
-      p.position.add(p.userData.velocity);
-      p.userData.velocity.y -= 0.01; // гравитация
+      // 2. Движение частицы
+      // Умножаем вектор скорости на timeScale
+      p.position.x += p.userData.velocity.x * timeScale;
+      p.position.y += p.userData.velocity.y * timeScale;
+      p.position.z += p.userData.velocity.z * timeScale;
+
+      // 3. Гравитация для каждой частицы
+      p.userData.velocity.y -= 0.01 * timeScale;
     });
 
+    // Удаление эффекта
     if (impact.userData.life <= 0) {
       scene.remove(impact);
+
+      impact.children.forEach(child => {
+        child.geometry.dispose();
+        child.material.dispose();
+      });
+      
       snowImpacts.splice(i, 1);
     }
   }

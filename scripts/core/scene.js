@@ -11,7 +11,7 @@ export const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, 1, 12);
 
-export const renderer = new THREE.WebGLRenderer({ antialias: true });
+export const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x0b1d2a);
 document.body.appendChild(renderer.domElement);

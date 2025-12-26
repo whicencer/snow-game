@@ -11,7 +11,7 @@ import { initStars } from './scripts/environment/stars.js';
 import { updateFirstPerson } from './scripts/camera/firstPerson.js';
 import { initMoon } from './scripts/environment/moon.js';
 import { updateSnowballAbility, updateSnowballs, updateSnowImpacts } from './scripts/player/snowball.js';
-import { launchFireworks } from './scripts/fireworks/fireworks.js';
+import { launchFireworksWithAudio, updateFireworks } from './scripts/fireworks/fireworks.js';
 import { createTelegramBlock } from './scripts/environment/telegramBlock.js';
 import { updateInteraction } from './scripts/interaction/interaction.js';
 import { createGifts } from './scripts/environment/gifts.js';
@@ -20,6 +20,20 @@ import { createEnvironment } from './scripts/utils/createEnvironment.js';
 import { createTarget } from './scripts/environment/targets/target.js';
 import { updateTargets } from './scripts/environment/targets/updateTargets.js';
 import { createSnowman } from './scripts/environment/snowman.js';
+
+/* =========================
+  STATS
+========================= */
+import Stats from 'three/examples/jsm/libs/stats.module';
+
+let stats; // Объявляем переменную в верхней области видимости
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('debug')) {
+  stats = new Stats();
+  stats.showPanel(0); // 0: fps
+  document.body.appendChild(stats.dom);
+}
 
 /* =========================
   INIT
@@ -54,17 +68,20 @@ const moon = initMoon(scene);
 /* =========================
   MAIN LOOP
 ========================= */
-updateLoop(() => {
-  updateFirstPerson(player, camera);
-  updateSnow(player);
-  updateSnowballs(scene);
+updateLoop((delta) => {
+  if (stats) stats.begin();
+
+  updateFirstPerson(player, camera, delta);
+  updateSnow(player, delta);
+  updateSnowballs(scene, delta);
   updateSnowballAbility(player, camera, scene);
-  updateSnowImpacts(scene);
+  updateSnowImpacts(scene, delta);
   updateInteraction(camera, scene, player);
   updateTargets();
+  updateFireworks(scene, delta);
 
   if (actions.launchFirework) {
-    launchFireworks(scene, camera);
+    launchFireworksWithAudio(scene, camera);
     actions.launchFirework = false;
   }
 
@@ -83,5 +100,8 @@ updateLoop(() => {
     );
   }
 
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.render(scene, camera);
+
+  if (stats) stats.end(); // Заканчиваем замер
 });
