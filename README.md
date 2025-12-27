@@ -1,5 +1,5 @@
 ## Important!
-**Please, make sure that your `graphics acceleration` is enabled in your browser settings.**
+**Please, make sure that `graphics acceleration` is enabled in your browser settings.**
 
 # 🎄 New Year Snow Game
 
