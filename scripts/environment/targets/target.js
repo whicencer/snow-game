@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { targets } from './targetsState.js';
 
-export function createTarget(scene, x, z) {
+export function createTarget(scene, x, z, isStrong = false) {
   const group = new THREE.Group();
 
   /* =========================
@@ -51,7 +51,8 @@ export function createTarget(scene, x, z) {
     isTarget: true,
     isUp: true,
     respawnTimer: 0,
-    baseRotation: Math.PI / 2
+    baseRotation: Math.PI / 2,
+    isTargetStrong: isStrong, // Определяет если мишень (не) падает после попадания
   };
 
   group.userData.collidable = true;

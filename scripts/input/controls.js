@@ -1,3 +1,4 @@
+import { trackGameEvent } from '../../metrics/trackGameEvent.js';
 import { currentInteractable } from '../interaction/state.js';
 import { playerState } from '../player/state.js';
 import { music } from '../sounds/music.js';
@@ -43,6 +44,7 @@ export function initControls() {
 
     if (e.code === 'KeyE' && currentInteractable) {
       handleInteraction(currentInteractable.name);
+      trackGameEvent('interaction', currentInteractable.name || 'unknown_object', 1);
     }
 
     if (e.code == 'Escape' && uiState.modalOpen) {

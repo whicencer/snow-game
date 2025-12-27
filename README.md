@@ -1,3 +1,6 @@
+## Important!
+**Please, make sure that your `graphics acceleration` is enabled in your browser settings.**
+
 # 🎄 New Year Snow Game
 
 A small New Year themed 3D game created in **just 2 days** using a **vibe-coding** approach ❄️  

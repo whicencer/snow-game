@@ -26,12 +26,12 @@ import { createSnowman } from './scripts/environment/snowman.js';
 ========================= */
 import Stats from 'three/examples/jsm/libs/stats.module';
 
-let stats; // Объявляем переменную в верхней области видимости
+let stats;
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('debug')) {
   stats = new Stats();
-  stats.showPanel(0); // 0: fps
+  stats.showPanel(0);
   document.body.appendChild(stats.dom);
 }
 

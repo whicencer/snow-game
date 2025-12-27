@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { fireworksSound } from '../sounds/fireworks.js';
 import { fireworks } from './state.js';
+import { trackGameEvent } from '../../metrics/trackGameEvent.js';
 
 /* =========================
   CREATE FIREWORK
@@ -148,6 +149,7 @@ export function updateFireworks(scene, delta) {
 }
 
 export function launchFireworksWithAudio(scene, camera) {
+  trackGameEvent('firework_launch', 'Firework Celebration', 1);
   // --- ЗВУК ---
     if (fireworksSound.isPlaying) fireworksSound.stop(); // Сбрасываем, если уже играет
     fireworksSound.play(); 

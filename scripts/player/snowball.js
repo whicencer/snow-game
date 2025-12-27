@@ -3,6 +3,7 @@ import { playerState, snowballs, snowImpacts } from './state';
 import { snowballSound, hitSound } from '../sounds/snowball.js';
 import { actions } from '../input/controls.js';
 import { updateTargetsUI } from '../ui/targetsUi.js';
+import { trackGameEvent } from '../../metrics/trackGameEvent.js';
 
 export function updateSnowballAbility(player, camera, scene) {
   if (!actions.throwSnowball) return;
@@ -35,6 +36,7 @@ function throwSnowball(player, camera, scene) {
 
   // звук (клонируем, чтобы не обрывался)
   snowballSound.cloneNode().play();
+  trackGameEvent('snowball_throw', 'Throw Snowball', 1);
 }
 
 export function updateSnowballs(scene, delta) {
@@ -55,13 +57,17 @@ export function updateSnowballs(scene, delta) {
     const hitObject = checkCollision(ball, nextPosition, scene);
 
     if (hitObject?.userData?.isTarget) {
+      trackGameEvent('snowball_hit', hitObject.name || 'default_target', 1);
       if (hitObject.userData.isUp) {
         playerState.targetsShot += 1;
         updateTargetsUI(playerState.targetsShot);
       }
-      hitObject.userData.isUp = false;
-      // Таймер респауна тоже должен зависеть от времени (120 кадров -> 2 секунды)
-      hitObject.userData.respawnTimer = 2 / delta; 
+
+      if (!hitObject.userData.isTargetStrong) {
+        hitObject.userData.isUp = false;
+        // Таймер респауна тоже должен зависеть от времени
+        hitObject.userData.respawnTimer = 0.5 / delta; 
+      }
     }
 
     if (hitObject || ball.position.y < 0) {
