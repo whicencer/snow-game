@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - '**/*.md'
+      - '.gitignore'
+      - '.github/**'
 
 permissions:
   contents: write
